@@ -508,6 +508,23 @@ class TestSolve(SolveCases):
         b = np.arange(2).reshape(1, 2).view(ArraySubclass)
         assert_raises(ValueError, linalg.solve, a, b)
 
+    @pytest.mark.parametrize('dtype', [csingle, cdouble])
+    def test_solve_complex_banded(self, dtype):
+        # Reproducer for access violation on Windows ARM64 with complex
+        # dtypes, see gh-XXXXX (discovered via SciPy test suite).
+        rng = np.random.default_rng(982345982439826)
+        n = 20
+        A = rng.random(size=(n, n)) + rng.random(size=(n, n)) * 1j
+        b = rng.random(size=(n,)) + rng.random(size=(n,)) * 1j
+        # banded structure
+        A = np.triu(np.tril(A, 2), -1).astype(dtype)
+        b = b.astype(dtype)
+        x = linalg.solve(A, b)
+        assert_almost_equal(A @ x, b)
+        # also exercise the transposed path
+        x_t = linalg.solve(A.T, b)
+        assert_almost_equal(A.T @ x_t, b)
+
     def test_0_size(self):
         class ArraySubclass(np.ndarray):
             pass

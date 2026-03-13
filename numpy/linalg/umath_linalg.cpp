@@ -1140,6 +1140,7 @@ using ftyp = fortran_type_t<typ>;
     fortran_int info = 0;
     fortran_int lda = fortran_int_max(m, 1);
     int i;
+
     /* note: done in place */
     LOCK_LAPACK_LITE;
     getrf(&m, &m, (ftyp*)src, &lda, pivots, &info);
@@ -1184,6 +1185,7 @@ slogdet(char **args,
      *   always a square matrix
      *   need to allocate memory for both, matrix_buffer and pivot buffer
      */
+    int error_occurred = get_fp_invalid_and_clear();
     INIT_OUTER_LOOP_3
     m = (fortran_int) dimensions[0];
     /* avoid empty malloc (buffers likely unused) and ensure m is `size_t` */
@@ -1210,6 +1212,7 @@ slogdet(char **args,
         /* TODO: Requires use of new ufunc API to indicate error return */
         report_no_memory();
     }
+    set_fp_invalid_or_clear(error_occurred);
 }
 
 template<typename typ, typename basetyp>
@@ -1232,6 +1235,7 @@ det(char **args,
      *   always a square matrix
      *   need to allocate memory for both, matrix_buffer and pivot buffer
      */
+    int error_occurred = get_fp_invalid_and_clear();
     INIT_OUTER_LOOP_2
     m = (fortran_int) dimensions[0];
     /* avoid empty malloc (buffers likely unused) and ensure m is `size_t` */
@@ -1263,6 +1267,7 @@ det(char **args,
         /* TODO: Requires use of new ufunc API to indicate error return */
         report_no_memory();
     }
+    set_fp_invalid_or_clear(error_occurred);
 }
 
 

@@ -823,61 +823,11 @@ static fortran_int getrf(fortran_int *m, fortran_int *n, double a[], fortran_int
 }
 static fortran_int getrf(fortran_int *m, fortran_int *n, f2c_complex a[], fortran_int
 *lda, fortran_int ipiv[], fortran_int *info) {
- fprintf(stderr, "DEBUG getrf(cgetrf): m=%d, n=%d, lda=%d, info=%d\n", (int)*m, (int)*n, (int)*lda, (int)*info);
- fprintf(stderr, "DEBUG getrf(cgetrf): sizeof(fortran_int)=%zu, sizeof(f2c_complex)=%zu\n", sizeof(fortran_int), sizeof(f2c_complex));
- fprintf(stderr, "DEBUG getrf(cgetrf): input matrix:\n");
- for (int _i = 0; _i < *m && _i < 4; _i++) {
-     for (int _j = 0; _j < *n && _j < 4; _j++) {
-         fprintf(stderr, "  A[%d,%d] = (%g, %g)", _i, _j, (double)a[_j * (*lda) + _i].r, (double)a[_j * (*lda) + _i].i);
-     }
-     fprintf(stderr, "\n");
- }
- fflush(stderr);
- fortran_int ret = LAPACK(cgetrf)(m, n, a, lda, ipiv, info);
- fprintf(stderr, "DEBUG getrf(cgetrf): returned ret=%d, info=%d\n", (int)ret, (int)*info);
- fprintf(stderr, "DEBUG getrf(cgetrf): output matrix:\n");
- for (int _i = 0; _i < *m && _i < 4; _i++) {
-     for (int _j = 0; _j < *n && _j < 4; _j++) {
-         fprintf(stderr, "  A[%d,%d] = (%g, %g)", _i, _j, (double)a[_j * (*lda) + _i].r, (double)a[_j * (*lda) + _i].i);
-     }
-     fprintf(stderr, "\n");
- }
- fprintf(stderr, "DEBUG getrf(cgetrf): pivots:");
- for (int _i = 0; _i < *m && _i < 4; _i++) {
-     fprintf(stderr, " %d", (int)ipiv[_i]);
- }
- fprintf(stderr, "\n");
- fflush(stderr);
- return ret;
+ return LAPACK(cgetrf)(m, n, a, lda, ipiv, info);
 }
 static fortran_int getrf(fortran_int *m, fortran_int *n, f2c_doublecomplex a[], fortran_int
 *lda, fortran_int ipiv[], fortran_int *info) {
- fprintf(stderr, "DEBUG getrf(zgetrf): m=%d, n=%d, lda=%d, info=%d\n", (int)*m, (int)*n, (int)*lda, (int)*info);
- fprintf(stderr, "DEBUG getrf(zgetrf): sizeof(fortran_int)=%zu, sizeof(f2c_doublecomplex)=%zu\n", sizeof(fortran_int), sizeof(f2c_doublecomplex));
- fprintf(stderr, "DEBUG getrf(zgetrf): input matrix:\n");
- for (int _i = 0; _i < *m && _i < 4; _i++) {
-     for (int _j = 0; _j < *n && _j < 4; _j++) {
-         fprintf(stderr, "  A[%d,%d] = (%g, %g)", _i, _j, a[_j * (*lda) + _i].r, a[_j * (*lda) + _i].i);
-     }
-     fprintf(stderr, "\n");
- }
- fflush(stderr);
- fortran_int ret = LAPACK(zgetrf)(m, n, a, lda, ipiv, info);
- fprintf(stderr, "DEBUG getrf(zgetrf): returned ret=%d, info=%d\n", (int)ret, (int)*info);
- fprintf(stderr, "DEBUG getrf(zgetrf): output matrix:\n");
- for (int _i = 0; _i < *m && _i < 4; _i++) {
-     for (int _j = 0; _j < *n && _j < 4; _j++) {
-         fprintf(stderr, "  A[%d,%d] = (%g, %g)", _i, _j, a[_j * (*lda) + _i].r, a[_j * (*lda) + _i].i);
-     }
-     fprintf(stderr, "\n");
- }
- fprintf(stderr, "DEBUG getrf(zgetrf): pivots:");
- for (int _i = 0; _i < *m && _i < 4; _i++) {
-     fprintf(stderr, " %d", (int)ipiv[_i]);
- }
- fprintf(stderr, "\n");
- fflush(stderr);
- return ret;
+ return LAPACK(zgetrf)(m, n, a, lda, ipiv, info);
 }
 
 /*
@@ -1146,8 +1096,6 @@ slogdet_from_factored_diagonal(typ* src,
     typ sign_acc = *sign;
     basetyp logdet_acc = numeric_limits<basetyp>::zero;
 
-    fprintf(stderr, "DEBUG slogdet_from_factored_diagonal(complex): m=%d\n", (int)m);
-
     for (i = 0; i < m; i++)
     {
         basetyp abs_element = npyabs(*src);
@@ -1155,18 +1103,10 @@ slogdet_from_factored_diagonal(typ* src,
         SETRE(&sign_element, RE(src) / abs_element);
         SETIM(&sign_element, IM(src) / abs_element);
 
-        fprintf(stderr, "  diag[%d]: re=%g, im=%g, abs=%g, sign_elem=(%g,%g)\n",
-                i, (double)RE(src), (double)IM(src), (double)abs_element,
-                (double)RE(&sign_element), (double)IM(&sign_element));
-
         sign_acc = mult(sign_acc, sign_element);
         logdet_acc += npylog(abs_element);
         src += m + 1;
     }
-
-    fprintf(stderr, "  final: logdet_acc=%g, sign_acc=(%g,%g)\n",
-            (double)logdet_acc, (double)RE(&sign_acc), (double)IM(&sign_acc));
-    fflush(stderr);
 
     *sign = sign_acc;
     *logdet = logdet_acc;
@@ -1201,47 +1141,10 @@ using ftyp = fortran_type_t<typ>;
     fortran_int lda = fortran_int_max(m, 1);
     int i;
 
-    {
-        int _fpstatus = npy_clear_floatstatus_barrier((char*)&m);
-        fprintf(stderr, "DEBUG slogdet_single_element: ENTRY fp_status=0x%x (divbyzero=%d, overflow=%d, underflow=%d, invalid=%d)\n",
-                _fpstatus, !!(_fpstatus & NPY_FPE_DIVIDEBYZERO), !!(_fpstatus & NPY_FPE_OVERFLOW),
-                !!(_fpstatus & NPY_FPE_UNDERFLOW), !!(_fpstatus & NPY_FPE_INVALID));
-    }
-    fprintf(stderr, "DEBUG slogdet_single_element: m=%d, lda=%d, sizeof(typ)=%zu, sizeof(ftyp)=%zu, sizeof(basetyp)=%zu\n",
-            (int)m, (int)lda, sizeof(typ), sizeof(ftyp), sizeof(basetyp));
-    fprintf(stderr, "DEBUG slogdet_single_element: src=%p, pivots=%p\n", (void*)src, (void*)pivots);
-    fprintf(stderr, "DEBUG slogdet_single_element: input matrix (before getrf):\n");
-    for (int _i = 0; _i < m && _i < 4; _i++) {
-        for (int _j = 0; _j < m && _j < 4; _j++) {
-            ftyp *elem = (ftyp*)src + _j * lda + _i;
-            fprintf(stderr, "  [%d,%d] bytes:", _i, _j);
-            unsigned char *bp = (unsigned char*)elem;
-            for (size_t _b = 0; _b < sizeof(ftyp); _b++) fprintf(stderr, " %02x", bp[_b]);
-            fprintf(stderr, "\n");
-        }
-    }
-    fflush(stderr);
-
     /* note: done in place */
     LOCK_LAPACK_LITE;
-    {
-        int _fpstatus_pre = npy_clear_floatstatus_barrier((char*)&m);
-        fprintf(stderr, "DEBUG slogdet_single_element: PRE-getrf fp_status=0x%x (divbyzero=%d, invalid=%d)\n",
-                _fpstatus_pre, !!(_fpstatus_pre & NPY_FPE_DIVIDEBYZERO), !!(_fpstatus_pre & NPY_FPE_INVALID));
-        fflush(stderr);
-    }
     getrf(&m, &m, (ftyp*)src, &lda, pivots, &info);
-    {
-        int _fpstatus_post = npy_clear_floatstatus_barrier((char*)&info);
-        fprintf(stderr, "DEBUG slogdet_single_element: POST-getrf fp_status=0x%x (divbyzero=%d, overflow=%d, underflow=%d, invalid=%d)\n",
-                _fpstatus_post, !!(_fpstatus_post & NPY_FPE_DIVIDEBYZERO), !!(_fpstatus_post & NPY_FPE_OVERFLOW),
-                !!(_fpstatus_post & NPY_FPE_UNDERFLOW), !!(_fpstatus_post & NPY_FPE_INVALID));
-        fflush(stderr);
-    }
     UNLOCK_LAPACK_LITE;
-
-    fprintf(stderr, "DEBUG slogdet_single_element: after getrf, info=%d\n", (int)info);
-    fflush(stderr);
 
     if (info == 0) {
         int change_sign = 0;
@@ -1251,30 +1154,9 @@ using ftyp = fortran_type_t<typ>;
             change_sign += (pivots[i] != (i+1));
         }
 
-        fprintf(stderr, "DEBUG slogdet_single_element: change_sign=%d, pivots:", change_sign);
-        for (i = 0; i < m && i < 4; i++) fprintf(stderr, " %d", (int)pivots[i]);
-        fprintf(stderr, "\n");
-
         *sign = (change_sign % 2)?numeric_limits<typ>::minus_one:numeric_limits<typ>::one;
-        {
-            int _fpstatus_pre2 = npy_clear_floatstatus_barrier((char*)&m);
-            fprintf(stderr, "DEBUG slogdet_single_element: PRE-slogdet_from_factored_diagonal fp_status=0x%x (divbyzero=%d, invalid=%d)\n",
-                    _fpstatus_pre2, !!(_fpstatus_pre2 & NPY_FPE_DIVIDEBYZERO), !!(_fpstatus_pre2 & NPY_FPE_INVALID));
-            fflush(stderr);
-        }
         slogdet_from_factored_diagonal(src, m, sign, logdet);
-        {
-            int _fpstatus_post2 = npy_clear_floatstatus_barrier((char*)logdet);
-            fprintf(stderr, "DEBUG slogdet_single_element: POST-slogdet_from_factored_diagonal fp_status=0x%x (divbyzero=%d, invalid=%d)\n",
-                    _fpstatus_post2, !!(_fpstatus_post2 & NPY_FPE_DIVIDEBYZERO), !!(_fpstatus_post2 & NPY_FPE_INVALID));
-            fflush(stderr);
-        }
-
-        fprintf(stderr, "DEBUG slogdet_single_element: logdet=%g\n", (double)*logdet);
-        fflush(stderr);
     } else {
-        fprintf(stderr, "DEBUG slogdet_single_element: getrf FAILED, info=%d -> setting sign=0, logdet=-inf\n", (int)info);
-        fflush(stderr);
         /*
           if getrf fails, use 0 as sign and -inf as logdet
         */
@@ -1303,6 +1185,7 @@ slogdet(char **args,
      *   always a square matrix
      *   need to allocate memory for both, matrix_buffer and pivot buffer
      */
+    int error_occurred = get_fp_invalid_and_clear();
     INIT_OUTER_LOOP_3
     m = (fortran_int) dimensions[0];
     /* avoid empty malloc (buffers likely unused) and ensure m is `size_t` */
@@ -1329,6 +1212,7 @@ slogdet(char **args,
         /* TODO: Requires use of new ufunc API to indicate error return */
         report_no_memory();
     }
+    set_fp_invalid_or_clear(error_occurred);
 }
 
 template<typename typ, typename basetyp>
@@ -1351,6 +1235,7 @@ det(char **args,
      *   always a square matrix
      *   need to allocate memory for both, matrix_buffer and pivot buffer
      */
+    int error_occurred = get_fp_invalid_and_clear();
     INIT_OUTER_LOOP_2
     m = (fortran_int) dimensions[0];
     /* avoid empty malloc (buffers likely unused) and ensure m is `size_t` */
@@ -1359,63 +1244,20 @@ det(char **args,
     pivot_size = safe_m * sizeof(fortran_int);
     tmp_buff = (char *)malloc(matrix_size + pivot_size);
 
-    fprintf(stderr, "DEBUG det(): m=%d, sizeof(typ)=%zu, sizeof(basetyp)=%zu, sizeof(fortran_int)=%zu\n",
-            (int)m, sizeof(typ), sizeof(basetyp), sizeof(fortran_int));
-    fprintf(stderr, "DEBUG det(): matrix_size=%zu, pivot_size=%zu, tmp_buff=%p\n",
-            matrix_size, pivot_size, (void*)tmp_buff);
-    fprintf(stderr, "DEBUG det(): steps[0]=%lld, steps[1]=%lld\n",
-            (long long)steps[0], (long long)steps[1]);
-    fflush(stderr);
-
     if (tmp_buff) {
         /* swapped steps to get matrix in FORTRAN order */
         linearize_data lin_data = init_linearize_data(m, m, steps[1], steps[0]);
-
-        fprintf(stderr, "DEBUG det(): linearize_data: rows=%lld, columns=%lld, row_strides=%lld, column_strides=%lld, output_lead_dim=%lld\n",
-                (long long)lin_data.rows, (long long)lin_data.columns,
-                (long long)lin_data.row_strides, (long long)lin_data.column_strides,
-                (long long)lin_data.output_lead_dim);
-        fflush(stderr);
 
         typ sign;
         basetyp logdet;
 
         BEGIN_OUTER_LOOP_2
-            fprintf(stderr, "DEBUG det(): linearizing input matrix from args[0]=%p\n", (void*)args[0]);
-            /* dump raw input bytes */
-            fprintf(stderr, "DEBUG det(): raw input bytes (first %zu bytes):\n", matrix_size < 128 ? matrix_size : (size_t)128);
-            {
-                unsigned char *_bp = (unsigned char*)args[0];
-                for (size_t _b = 0; _b < matrix_size && _b < 128; _b++) {
-                    fprintf(stderr, "%02x ", _bp[_b]);
-                    if ((_b + 1) % 16 == 0) fprintf(stderr, "\n");
-                }
-                fprintf(stderr, "\n");
-            }
-            fflush(stderr);
-
             linearize_matrix((typ*)tmp_buff, (typ*)args[0], &lin_data);
-
-            fprintf(stderr, "DEBUG det(): linearized matrix in tmp_buff:\n");
-            {
-                unsigned char *_bp = (unsigned char*)tmp_buff;
-                for (size_t _b = 0; _b < matrix_size && _b < 128; _b++) {
-                    fprintf(stderr, "%02x ", _bp[_b]);
-                    if ((_b + 1) % 16 == 0) fprintf(stderr, "\n");
-                }
-                fprintf(stderr, "\n");
-            }
-            fflush(stderr);
-
             slogdet_single_element(m,
                                          (typ*)tmp_buff,
                                           (fortran_int*)(tmp_buff + matrix_size),
                                           &sign,
                                           &logdet);
-
-            fprintf(stderr, "DEBUG det(): after slogdet_single_element: logdet=%g\n", (double)logdet);
-            fflush(stderr);
-
             *(typ *)args[1] = det_from_slogdet(sign, logdet);
         END_OUTER_LOOP
 
@@ -1425,6 +1267,7 @@ det(char **args,
         /* TODO: Requires use of new ufunc API to indicate error return */
         report_no_memory();
     }
+    set_fp_invalid_or_clear(error_occurred);
 }
 
 

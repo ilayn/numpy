@@ -57,6 +57,7 @@ jobs:
 
       - name: Run complex det and solve debug tests
         run: |
+          cd $env:TEMP
           python -c "
           import numpy as np
           import sys

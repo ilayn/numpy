@@ -1201,6 +1201,12 @@ using ftyp = fortran_type_t<typ>;
     fortran_int lda = fortran_int_max(m, 1);
     int i;
 
+    {
+        int _fpstatus = npy_clear_floatstatus_barrier((char*)&m);
+        fprintf(stderr, "DEBUG slogdet_single_element: ENTRY fp_status=0x%x (divbyzero=%d, overflow=%d, underflow=%d, invalid=%d)\n",
+                _fpstatus, !!(_fpstatus & NPY_FPE_DIVIDEBYZERO), !!(_fpstatus & NPY_FPE_OVERFLOW),
+                !!(_fpstatus & NPY_FPE_UNDERFLOW), !!(_fpstatus & NPY_FPE_INVALID));
+    }
     fprintf(stderr, "DEBUG slogdet_single_element: m=%d, lda=%d, sizeof(typ)=%zu, sizeof(ftyp)=%zu, sizeof(basetyp)=%zu\n",
             (int)m, (int)lda, sizeof(typ), sizeof(ftyp), sizeof(basetyp));
     fprintf(stderr, "DEBUG slogdet_single_element: src=%p, pivots=%p\n", (void*)src, (void*)pivots);
@@ -1218,7 +1224,20 @@ using ftyp = fortran_type_t<typ>;
 
     /* note: done in place */
     LOCK_LAPACK_LITE;
+    {
+        int _fpstatus_pre = npy_clear_floatstatus_barrier((char*)&m);
+        fprintf(stderr, "DEBUG slogdet_single_element: PRE-getrf fp_status=0x%x (divbyzero=%d, invalid=%d)\n",
+                _fpstatus_pre, !!(_fpstatus_pre & NPY_FPE_DIVIDEBYZERO), !!(_fpstatus_pre & NPY_FPE_INVALID));
+        fflush(stderr);
+    }
     getrf(&m, &m, (ftyp*)src, &lda, pivots, &info);
+    {
+        int _fpstatus_post = npy_clear_floatstatus_barrier((char*)&info);
+        fprintf(stderr, "DEBUG slogdet_single_element: POST-getrf fp_status=0x%x (divbyzero=%d, overflow=%d, underflow=%d, invalid=%d)\n",
+                _fpstatus_post, !!(_fpstatus_post & NPY_FPE_DIVIDEBYZERO), !!(_fpstatus_post & NPY_FPE_OVERFLOW),
+                !!(_fpstatus_post & NPY_FPE_UNDERFLOW), !!(_fpstatus_post & NPY_FPE_INVALID));
+        fflush(stderr);
+    }
     UNLOCK_LAPACK_LITE;
 
     fprintf(stderr, "DEBUG slogdet_single_element: after getrf, info=%d\n", (int)info);
@@ -1237,7 +1256,19 @@ using ftyp = fortran_type_t<typ>;
         fprintf(stderr, "\n");
 
         *sign = (change_sign % 2)?numeric_limits<typ>::minus_one:numeric_limits<typ>::one;
+        {
+            int _fpstatus_pre2 = npy_clear_floatstatus_barrier((char*)&m);
+            fprintf(stderr, "DEBUG slogdet_single_element: PRE-slogdet_from_factored_diagonal fp_status=0x%x (divbyzero=%d, invalid=%d)\n",
+                    _fpstatus_pre2, !!(_fpstatus_pre2 & NPY_FPE_DIVIDEBYZERO), !!(_fpstatus_pre2 & NPY_FPE_INVALID));
+            fflush(stderr);
+        }
         slogdet_from_factored_diagonal(src, m, sign, logdet);
+        {
+            int _fpstatus_post2 = npy_clear_floatstatus_barrier((char*)logdet);
+            fprintf(stderr, "DEBUG slogdet_single_element: POST-slogdet_from_factored_diagonal fp_status=0x%x (divbyzero=%d, invalid=%d)\n",
+                    _fpstatus_post2, !!(_fpstatus_post2 & NPY_FPE_DIVIDEBYZERO), !!(_fpstatus_post2 & NPY_FPE_INVALID));
+            fflush(stderr);
+        }
 
         fprintf(stderr, "DEBUG slogdet_single_element: logdet=%g\n", (double)*logdet);
         fflush(stderr);

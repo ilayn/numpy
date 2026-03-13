@@ -15,10 +15,10 @@ permissions:
 
 jobs:
   #=======================================================================================
-  # Windows ARM64 with OpenBLAS — debug complex det/solve crash
+  # Windows ARM64 with OpenBLAS — verify complex det/solve fix
   #=======================================================================================
   win_arm64_openblas:
-    name: Win ARM64, openblas64, linalg debug
+    name: Win ARM64, openblas64, linalg
     runs-on: windows-11-arm
     steps:
       - name: Checkout
@@ -55,109 +55,7 @@ jobs:
         run: |
           python -m pip install -r requirements/test_requirements.txt
 
-      - name: Run complex det and solve debug tests
-        run: |
-          cd $env:TEMP
-          python -c "
-          import numpy as np
-          import sys
-
-          print('NumPy version:', np.__version__)
-          print('NumPy location:', np.__file__)
-          print('BLAS info:')
-          np.show_config()
-          sys.stdout.flush()
-
-          # Test 1: det with complex64
-          print('\n=== TEST 1: det complex64 ===')
-          sys.stdout.flush()
-          A = np.array([[1, 0.5], [0.5, 1]], dtype=np.complex64)
-          print(f'Input A dtype={A.dtype}, shape={A.shape}')
-          print(f'Input A:\n{A}')
-          print(f'Input A bytes: {A.tobytes().hex()}')
-          sys.stdout.flush()
-          try:
-              d = np.linalg.det(A)
-              print(f'det result: {d}, dtype={d.dtype}')
-              print(f'Expected: 0.75')
-          except Exception as e:
-              print(f'det FAILED: {e}')
-          sys.stdout.flush()
-
-          # Test 2: det with complex128
-          print('\n=== TEST 2: det complex128 ===')
-          sys.stdout.flush()
-          A2 = np.array([[1, 0.5], [0.5, 1]], dtype=np.complex128)
-          print(f'Input A dtype={A2.dtype}, shape={A2.shape}')
-          print(f'Input A:\n{A2}')
-          print(f'Input A bytes: {A2.tobytes().hex()}')
-          sys.stdout.flush()
-          try:
-              d2 = np.linalg.det(A2)
-              print(f'det result: {d2}, dtype={d2.dtype}')
-              print(f'Expected: 0.75')
-          except Exception as e:
-              print(f'det FAILED: {e}')
-          sys.stdout.flush()
-
-          # Test 3: det with float64 (should work)
-          print('\n=== TEST 3: det float64 (control) ===')
-          sys.stdout.flush()
-          A3 = np.array([[1, 0.5], [0.5, 1]], dtype=np.float64)
-          try:
-              d3 = np.linalg.det(A3)
-              print(f'det result: {d3}, dtype={d3.dtype}')
-              print(f'Expected: 0.75')
-          except Exception as e:
-              print(f'det FAILED: {e}')
-          sys.stdout.flush()
-
-          # Test 4: solve with complex128
-          print('\n=== TEST 4: solve complex128 ===')
-          sys.stdout.flush()
-          A4 = np.array([[1+1j, 2+0j], [0+1j, 3+1j]], dtype=np.complex128)
-          b4 = np.array([1+0j, 2+1j], dtype=np.complex128)
-          print(f'Input A dtype={A4.dtype}')
-          print(f'Input A:\n{A4}')
-          print(f'Input b: {b4}')
-          sys.stdout.flush()
-          try:
-              x4 = np.linalg.solve(A4, b4)
-              print(f'solve result: {x4}')
-          except Exception as e:
-              print(f'solve FAILED: {e}')
-          sys.stdout.flush()
-
-          # Test 5: solve with complex64
-          print('\n=== TEST 5: solve complex64 ===')
-          sys.stdout.flush()
-          A5 = A4.astype(np.complex64)
-          b5 = b4.astype(np.complex64)
-          print(f'Input A dtype={A5.dtype}')
-          sys.stdout.flush()
-          try:
-              x5 = np.linalg.solve(A5, b5)
-              print(f'solve result: {x5}')
-          except Exception as e:
-              print(f'solve FAILED: {e}')
-          sys.stdout.flush()
-
-          # Test 6: solve with float64 (control)
-          print('\n=== TEST 6: solve float64 (control) ===')
-          sys.stdout.flush()
-          A6 = np.array([[1, 2], [3, 4]], dtype=np.float64)
-          b6 = np.array([5, 6], dtype=np.float64)
-          try:
-              x6 = np.linalg.solve(A6, b6)
-              print(f'solve result: {x6}')
-          except Exception as e:
-              print(f'solve FAILED: {e}')
-          sys.stdout.flush()
-
-          print('\n=== ALL TESTS DONE ===')
-          " 2>&1
-
       - name: Run linalg tests
         run: |
           cd tools
-          python -m pytest --pyargs numpy.linalg.tests -v -k "(test_types and TestDet) or (test_types and TestSolve)" --timeout=60
+          python -m pytest --pyargs numpy.linalg.tests -v -k "(test_types and TestDet) or (test_types and TestSolve) or (test_types and TestSlogdet)" --timeout=60

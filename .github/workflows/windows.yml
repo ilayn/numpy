@@ -156,3 +156,7 @@ jobs:
 
           print('\n=== ALL TESTS DONE ===')
           " 2>&1
+
+      - name: Run linalg tests
+        run: |
+          python -m pytest --pyargs numpy.linalg.tests.test_linalg -v -k "(test_types and TestDet) or (test_types and TestSolve)" --timeout=60

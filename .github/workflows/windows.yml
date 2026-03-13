@@ -58,4 +58,4 @@ jobs:
       - name: Run linalg tests
         run: |
           cd tools
-          python -m pytest --pyargs numpy.linalg.tests -v -k "(test_types and TestDet) or (test_types and TestSolve) or (test_types and TestSlogdet)" --timeout=60
+          python -m pytest --pyargs numpy.linalg.tests -v -k "(test_types and TestDet) or (test_types and TestSolve) or (test_types and TestSlogdet) or test_solve_complex_banded" --timeout=60

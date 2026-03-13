@@ -49,8 +49,7 @@ jobs:
 
       - name: Run linalg tests
         run: |
-          cd tools
-          python -m pytest --pyargs numpy.linalg.tests -x -v --timeout=600 --durations=10
+          spin test -s linalg -- --timeout=600 --durations=10
 
   #=======================================================================================
   # Windows ARM64 with OpenBLAS — matches the PyPI wheel config
@@ -95,5 +94,4 @@ jobs:
 
       - name: Run linalg tests
         run: |
-          cd tools
-          python -m pytest --pyargs numpy.linalg.tests -x -v --timeout=600 --durations=10
+          spin test -s linalg -- --timeout=600 --durations=10
